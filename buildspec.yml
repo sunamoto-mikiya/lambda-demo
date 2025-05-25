@@ -2,36 +2,52 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      python: 3.9
     commands:
       # 依存ライブラリを一時フォルダ package/ にインストール
       - pip install -r requirements.txt -t package
+  
   pre_build:
     commands:
+      # 現在のプロダクションバージョンを取得
       - |
-        CURRENT_VERSION=$(
-          aws lambda get-alias \
-            --function-name demo-func-1 \
-            --name prod \
-            --query FunctionVersion \
-            --output text
-        )
+        CURRENT_VERSION=$(aws lambda get-alias \
+          --function-name demo-func-1 \
+          --name prod \
+          --query FunctionVersion \
+          --output text)
+        echo "Current production version: $CURRENT_VERSION"
+  
   build:
     commands:
-      # コードを ZIP 化
+      # パッケージディレクトリを作成
       - mkdir -p package
+      # 依存ライブラリを再インストール（念のため）
       - pip install -r requirements.txt -t package
+      # ハンドラをコピーして ZIP 化
       - cp src/lambda_function.py package/
       - cd package && zip -r ../function.zip . && cd ..
-      # 新バージョンを発行
-      - TARGET_VERSION=$(aws lambda publish-version \
+      # 新しいバージョンを公開
+      - |
+        TARGET_VERSION=$(aws lambda publish-version \
           --function-name demo-func-1 \
           --query Version \
           --output text)
-      # AppSpec に CurrentVersion/TargetVersion を埋め込む
-      - sed -i \
-          -e "s/{{CurrentVersion}}/$CURRENT_VERSION/" \
-          -e "s/{{TargetVersion}}/$TARGET_VERSION/" \
-          appspec.yml
+        echo "Published new version: $TARGET_VERSION"
+      # エイリアスを更新
+      - |
+        aws lambda update-alias \
+          --function-name demo-func-1 \
+          --name prod \
+          --function-version $TARGET_VERSION
+        echo "Updated prod alias to version: $TARGET_VERSION"
+  
+  post_build:
+    commands:
+      # S3 バケットへアップロード
+      - aws s3 cp function.zip s3://lambda-func-deploy-demo/function-v1.zip
+      - echo "Build completed successfully"
 
 artifacts:
   files:
