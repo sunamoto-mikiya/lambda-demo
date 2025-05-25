@@ -5,3 +5,4 @@ Resources:
       Properties:
         Name: demo-func-1
         Alias: prod
+        CurrentVersion: true
