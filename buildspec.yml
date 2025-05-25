@@ -5,15 +5,31 @@ phases:
     commands:
       # 依存ライブラリを一時フォルダ package/ にインストール
       - pip install -r requirements.txt -t package
+  pre_build:
+    commands:
+      # 現在のバージョン（数字）をエイリアス prod から取得
+      - CURRENT_VERSION=$(aws lambda get-alias \
+          --function-name demo-manual-deploy \
+          --name prod \
+          --query 'FunctionVersion' \
+          --output text)
   build:
     commands:
-      # ハンドラをコピーして ZIP 化
+      # コードを ZIP 化
+      - mkdir -p package
+      - pip install -r requirements.txt -t package
       - cp src/lambda_function.py package/
       - cd package && zip -r ../function.zip . && cd ..
-  # post_build:
-  #   commands:
-  #     # S3 バケットへアップロード（<YourArtifactBucket> は実際のバケット名に置き換え）
-  #     - aws s3 cp function.zip s3://lambda-func-deploy-demo/function-v1.zip
+      # 新バージョンを発行
+      - TARGET_VERSION=$(aws lambda publish-version \
+          --function-name demo-manual-deploy \
+          --query Version \
+          --output text)
+      # AppSpec に CurrentVersion/TargetVersion を埋め込む
+      - sed -i \
+          -e "s/{{CurrentVersion}}/$CURRENT_VERSION/" \
+          -e "s/{{TargetVersion}}/$TARGET_VERSION/" \
+          appspec.yml
 
 artifacts:
   files:
