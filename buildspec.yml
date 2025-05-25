@@ -9,7 +9,7 @@ phases:
     commands:
       # ハンドラをコピーして ZIP 化
       - cp src/lambda_function.py package/
-      - cd package && zip -r ../function.zip .
+      - cd package && zip -r ../function.zip . && cd ..
   post_build:
     commands:
       # S3 バケットへアップロード（<YourArtifactBucket> は実際のバケット名に置き換え）
