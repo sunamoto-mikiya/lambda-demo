@@ -7,12 +7,14 @@ phases:
       - pip install -r requirements.txt -t package
   pre_build:
     commands:
-      # 現在のバージョン（数字）をエイリアス prod から取得
-      - CURRENT_VERSION=$(aws lambda get-alias \
-          --function-name demo-manual-deploy \
-          --name prod \
-          --query 'FunctionVersion' \
-          --output text)
+      - |
+        CURRENT_VERSION=$(
+          aws lambda get-alias \
+            --function-name demo-manual-deploy \
+            --name prod \
+            --query FunctionVersion \
+            --output text
+        )
   build:
     commands:
       # コードを ZIP 化
