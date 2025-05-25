@@ -8,48 +8,27 @@ phases:
       # 依存ライブラリを一時フォルダ package/ にインストール
       - pip install -r requirements.txt -t package
   
-  pre_build:
-    commands:
-      # 現在のプロダクションバージョンを取得
-      - |
-        CURRENT_VERSION=$(aws lambda get-alias \
-          --function-name demo-func-1 \
-          --name prod \
-          --query FunctionVersion \
-          --output text)
-        echo "Current production version: $CURRENT_VERSION"
-  
   build:
     commands:
       # パッケージディレクトリを作成
       - mkdir -p package
-      # 依存ライブラリを再インストール（念のため）
+      # 依存ライブラリをインストール
       - pip install -r requirements.txt -t package
-      # ハンドラをコピーして ZIP 化
+      # ハンドラをコピー
       - cp src/lambda_function.py package/
+      # ZIP化（S3アップロード用）
       - cd package && zip -r ../function.zip . && cd ..
-      # 新しいバージョンを公開
-      - |
-        TARGET_VERSION=$(aws lambda publish-version \
-          --function-name demo-func-1 \
-          --query Version \
-          --output text)
-        echo "Published new version: $TARGET_VERSION"
-      # エイリアスを更新
-      - |
-        aws lambda update-alias \
-          --function-name demo-func-1 \
-          --name prod \
-          --function-version $TARGET_VERSION
-        echo "Updated prod alias to version: $TARGET_VERSION"
   
   post_build:
     commands:
-      # S3 バケットへアップロード
+      # S3 バケットへアップロード（バックアップ・手動デプロイ用）
       - aws s3 cp function.zip s3://lambda-func-deploy-demo/function-v1.zip
       - echo "Build completed successfully"
 
 artifacts:
   files:
-    - appspec.yml    # CodeDeploy 旧フロー用。後で不要なら消してOK
-    - function.zip   # デプロイ対象のZIPアーティファクト
+    # CodePipelineのLambdaアクション用にソースコードを含める
+    - src/**/*
+    - requirements.txt
+    # S3アップロード確認用
+    - function.zip
