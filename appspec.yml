@@ -1,0 +1,7 @@
+version: 0.0
+Resources:
+  - MyLambdaFunction:
+      Type: AWS::Lambda::Function
+      Properties:
+        Name: demo-func-1
+        Alias: prod
