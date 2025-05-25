@@ -30,5 +30,4 @@ artifacts:
     # CodePipelineのLambdaアクション用にソースコードを含める
     - src/**/*
     - requirements.txt
-    # S3アップロード確認用
-    - function.zip
+    # function.zipは除外（Lambda関数に不要、S3バックアップのみ）
