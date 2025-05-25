@@ -10,7 +10,7 @@ phases:
       - |
         CURRENT_VERSION=$(
           aws lambda get-alias \
-            --function-name demo-manual-deploy \
+            --function-name demo-func-1 \
             --name prod \
             --query FunctionVersion \
             --output text
@@ -24,7 +24,7 @@ phases:
       - cd package && zip -r ../function.zip . && cd ..
       # 新バージョンを発行
       - TARGET_VERSION=$(aws lambda publish-version \
-          --function-name demo-manual-deploy \
+          --function-name demo-func-1 \
           --query Version \
           --output text)
       # AppSpec に CurrentVersion/TargetVersion を埋め込む
