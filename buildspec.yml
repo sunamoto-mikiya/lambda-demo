@@ -18,6 +18,9 @@ phases:
       - cp src/lambda_function.py package/
       # ZIP化（S3アップロード用）
       - cd package && zip -r ../function.zip . && cd ..
+      
+      # CodePipelineのLambdaアクション用にルートレベルにファイルをコピー
+      - cp src/lambda_function.py ./
   
   post_build:
     commands:
@@ -27,7 +30,7 @@ phases:
 
 artifacts:
   files:
-    # CodePipelineのLambdaアクション用にソースコードを含める
-    - src/**/*
+    # CodePipelineのLambdaアクション用（ルートレベルのファイル）
+    - lambda_function.py
     - requirements.txt
     # function.zipは除外（Lambda関数に不要、S3バックアップのみ）
